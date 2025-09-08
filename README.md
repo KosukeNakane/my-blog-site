@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## プロジェクト概要
 
-## Getting Started
+Next.js 15（App Router）+ TypeScript のブログアプリです。DB は MySQL（`mysql2` クライアント）を使用し、`posts` / `tags` / `post_tag` の3テーブルで記事とタグを管理します。UI はホームページで Windows XP 風デスクトップを再現し、ウインドウ内で「新規投稿」「編集」「タグ管理」「タグ別一覧」などの画面を開きます。
 
-First, run the development server:
+## 前提
+- Node.js 18 以上（推奨: 20+）
+- pnpm 10 以上（npm/yarn でも可）
+- MySQL 5.7+ or 8.x（ローカル MAMP でも可）
+
+## セットアップ手順
+1) 依存関係のインストール
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2) 環境変数 `.env.local` を作成（`.env.local.example` をコピー）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.local.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3) `.env.local` を自分の環境に合わせて編集
 
-## Learn More
+補足: `.gitignore` で `.env*` はコミット対象外ですが、テンプレートの `.env.local.example` は除外解除しているため、リポジトリに含まれます（第三者はそこからコピー可能）。
 
-To learn more about Next.js, take a look at the following resources:
+例（MAMP のデフォルト設定）:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+DB_HOST=127.0.0.1
+DB_PORT=8889
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=my-blog-site
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+例（一般的なローカル MySQL）:
 
-## Deploy on Vercel
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=your_user
+DB_PASSWORD=your_password
+DB_NAME=my_blog
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4) データベースとテーブルを作成（下記「データベースの作り方」参照）
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5) 開発サーバ起動（環境変数を変更した場合は起動し直してください）
+
+```bash
+pnpm dev
+# http://localhost:3000
+```
+
+## データベースの作り方（MySQL）
+
+1) データベース（スキーマ）作成
+
+```sql
+CREATE DATABASE IF NOT EXISTS `my-blog-site` DEFAULT CHARACTER SET utf8mb4;
+```
+
+2) 使用する DB を選択
+
+```sql
+USE `my-blog-site`;
+```
+
+3) テーブル作成
+
+```sql
+-- posts: 記事本体
+CREATE TABLE IF NOT EXISTS posts (
+  id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- tags: タグ
+CREATE TABLE IF NOT EXISTS tags (
+  id   BIGINT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- post_tag: 記事とタグの中間
+CREATE TABLE IF NOT EXISTS post_tag (
+  id      INT NOT NULL AUTO_INCREMENT,
+  post_id BIGINT NOT NULL,
+  tag_id  BIGINT NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_post_id (post_id),
+  KEY idx_tag_id  (tag_id),
+  CONSTRAINT fk_post_tag_post
+    FOREIGN KEY (post_id) REFERENCES posts(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_post_tag_tag
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- （任意・推奨）post_id と tag_id の重複を物理的に防ぐ
+-- ALTER TABLE post_tag ADD UNIQUE KEY uniq_post_tag (post_id, tag_id);
+```
+
+4) 動作確認
+
+```sql
+USE `my-blog-site`;
+SHOW TABLES;            -- posts, tags, post_tag が表示されること
+DESCRIBE posts;         -- name, content, created_at, updated_at など
+```
+
+## API の簡易確認（任意）
+
+開発サーバ起動中に以下を実行して 201 が返ることを確認（新規投稿）。
+
+```bash
+curl -i -X POST http://localhost:3000/api/posts \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test","content":"hello","tags":"web, next"}'
+```
+
+## 実装メモ（接続とランタイム）
+
+- DB 接続は `mysql2/promise` を使用し、`src/lib/db.ts` でプール（コネクションプーリング）を構築しています。開発時の HMR でも 1 つのプールを再利用する実装です。
+- API ルートは Node ランタイムで実行（`export const runtime = "nodejs"`）し、Edge で実行されないようにしています。
+- 環境変数は Next.js が `.env.local` を自動で読み込みます。値を変更したら開発サーバを再起動してください。
+
+## よくあるエラーと対処
+
+- 500（Internal Server Error）で保存できない
+  - `.env.local` の DB 接続情報が正しいか確認（特に MAMP: port=8889, user=root, pass=root）。
+  - MySQL が起動しているか、DB/テーブルが存在するか（上記 SQL を再確認）。
+- `不正なリクエストです` や 400
+  - `name` と `content` は必須です。`tags` は文字列（カンマ/空白区切り）または配列のどちらでも可。
+
+## 起動・ビルド
+
+開発:
+
+```bash
+pnpm dev
+```
+
+本番ビルド:
+
+```bash
+pnpm build
+pnpm start
+```
+
+---
+
+何か詰まった場合は、開発サーバのコンソールログ（`pnpm dev` 実行ターミナル）とブラウザの開発者ツールのエラーメッセージをご共有ください。
