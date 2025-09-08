@@ -31,6 +31,7 @@ type Props = {
 };
 
 export default function XpDesktop({ blogPosts }: Props) {
+  const [postsState, setPostsState] = useState<PostItem[]>(blogPosts ?? []);
   const [windows, setWindows] = useState<XpWindow[]>(() => {
     const id = uid();
     const welcome: XpWindow = {
@@ -60,10 +61,11 @@ export default function XpDesktop({ blogPosts }: Props) {
         z: 2,
         content: (
           <BlogListWindow
-            posts={blogPosts}
+            posts={postsState}
             onOpenNewPost={openNewPost}
             onOpenTags={openTags}
             onOpenEdit={openEditPost}
+            onRefresh={refreshPosts}
           />
         ),
         kind: "blog",
@@ -77,8 +79,13 @@ export default function XpDesktop({ blogPosts }: Props) {
   const [modal, setModal] = useState<string | null>(null);
 
   function focusWin(id: string) {
-    setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, z: zTop + 1 } : w)));
-    setZTop((z) => z + 2);
+    setWindows((prev) => {
+      const currentMax = prev.reduce((m, w) => (w.z > m ? w.z : m), 0);
+      const nextZ = currentMax + 1;
+      const updated = prev.map((w) => (w.id === id ? { ...w, z: nextZ } : w));
+      setZTop(nextZ);
+      return updated;
+    });
   }
 
   function bringToFrontBy(kind: XpWindow["kind"], keyId?: string) {
@@ -158,10 +165,11 @@ export default function XpDesktop({ blogPosts }: Props) {
       z: zTop + 1,
       content: (
         <BlogListWindow
-          posts={blogPosts ?? []}
+          posts={postsState}
           onOpenNewPost={openNewPost}
           onOpenTags={openTags}
           onOpenEdit={openEditPost}
+          onRefresh={refreshPosts}
         />
       ),
       kind: "blog",
@@ -179,7 +187,13 @@ export default function XpDesktop({ blogPosts }: Props) {
       minimized: false,
       maximized: false,
       z: zTop + 1,
-      content: <NewPostForm />,
+      content: (
+        <NewPostForm
+          onCreated={() => {
+            refreshPosts().then(() => bringToFrontBy("blog"));
+          }}
+        />
+      ),
       kind: "newPost",
     }));
   }
@@ -265,6 +279,38 @@ export default function XpDesktop({ blogPosts }: Props) {
     [now]
   );
 
+  async function refreshPosts() {
+    try {
+      const res = await fetch("/api/posts");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "取得に失敗しました");
+      setPostsState(data.posts as PostItem[]);
+    } catch {
+      // ignore fetch errors for manual refresh
+    }
+  }
+
+  useEffect(() => {
+    setWindows((prev) =>
+      prev.map((w) =>
+        w.kind === "blog"
+          ? {
+              ...w,
+              content: (
+                <BlogListWindow
+                  posts={postsState}
+                  onOpenNewPost={openNewPost}
+                  onOpenTags={openTags}
+                  onOpenEdit={openEditPost}
+                  onRefresh={refreshPosts}
+                />
+              ),
+            }
+          : w
+      )
+    );
+  }, [postsState]);
+
   return (
     <div className="w-full min-h-screen" style={{ fontFamily: "Tahoma, Verdana, 'Segoe UI', sans-serif" }}>
       <div
@@ -330,20 +376,25 @@ export default function XpDesktop({ blogPosts }: Props) {
         </div>
 
         {startOpen && (
-          <StartMenu onOpenNotepad={openNotepad} onOpenMyComputer={openMyComputer} onOpenBlog={openBlog} onClose={() => setStartOpen(false)} />
+          <StartMenu
+            onOpenNotepad={openNotepad}
+            onOpenMyComputer={openMyComputer}
+            onOpenBlog={openBlog}
+            onClose={() => setStartOpen(false)}
+          />
         )}
 
         {modal && (
-          <div className="absolute inset-0 flex items-center justify-center" onClick={() => setModal(null)}>
-            <div className="absolute inset-0 bg-black/30" />
-            <div className="relative z-10 w-80 rounded-sm" style={{ border: "1px solid #0a246a", boxShadow: "2px 2px 0 rgba(0,0,0,0.25)" }}>
+          <div className="absolute inset-0 flex items-center justify-center" onClick={() => setModal(null)} style={{ zIndex: 10000 }}>
+            <div className="absolute inset-0 bg-black/30" style={{ zIndex: 10000 }} />
+            <div className="relative w-80 rounded-sm" style={{ zIndex: 10001, border: "1px solid #0a246a", boxShadow: "2px 2px 0 rgba(0,0,0,0.25)" }}>
               <div className="h-8 px-3 flex items-center justify-between" style={{ color: "#fff", background: "linear-gradient(180deg, #3b6ea5 0%, #2b5aa0 100%)", boxShadow: "0 1px 0 #6fa1da inset, 0 -1px 0 #183a7a inset" }}>
                 <span className="font-bold text-sm">Windows XP</span>
               </div>
               <div className="p-4" style={{ background: "#ECE9D8", borderTop: "1px solid #fff", boxShadow: "inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b5b1a7" }}>
                 <p className="text-sm mb-4" style={{ color: "#111" }}>{modal}</p>
                 <div className="text-right">
-                  <button onClick={() => setModal(null)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">OK</button>
+                 <button onClick={() => setModal(null)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">OK</button>
                 </div>
               </div>
             </div>
@@ -539,7 +590,7 @@ function StartMenu({ onOpenNotepad, onOpenMyComputer, onOpenBlog, onClose }: { o
   }, [onClose]);
 
   return (
-    <div className="absolute left-1 bottom-12 w-80 text-[13px]" style={{ border: "1px solid #0a246a", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }} onClick={(e) => e.stopPropagation()}>
+    <div className="absolute left-1 bottom-12 w-80 text-[13px]" style={{ zIndex: 9999, border: "1px solid #0a246a", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }} onClick={(e) => e.stopPropagation()}>
       <div className="flex" style={{ background: "#f0f0f0" }}>
         <div className="w-8" style={{ background: "linear-gradient(180deg, #3b6ea5 0%, #2b5aa0 100%)" }} />
         <div className="flex-1 p-2">

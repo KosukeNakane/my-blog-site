@@ -16,7 +16,9 @@ function parseTags(input: string): string[] {
   return Array.from(new Set(parts.map((t) => t.toLowerCase())));
 }
 
-export default function NewPostForm() {
+type Props = { onCreated?: () => void };
+
+export default function NewPostForm({ onCreated }: Props) {
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [tagsInput, setTagsInput] = useState("");
@@ -45,6 +47,7 @@ export default function NewPostForm() {
       setName("");
       setContent("");
       setTagsInput("");
+      if (onCreated) onCreated();
     } catch (err: any) {
       console.error(err);
       setMessage(err?.message || "送信に失敗しました");

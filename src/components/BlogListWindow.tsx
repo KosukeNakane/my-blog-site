@@ -16,17 +16,43 @@ type Props = {
   onOpenNewPost: () => void;
   onOpenTags: () => void;
   onOpenEdit: (id: number) => void;
+  onRefresh?: () => void;
 };
 
 import { useEffect, useState } from "react";
 
-export default function BlogListWindow({ posts, onOpenNewPost, onOpenTags, onOpenEdit }: Props) {
+export default function BlogListWindow({ posts, onOpenNewPost, onOpenTags, onOpenEdit, onRefresh }: Props) {
   const [items, setItems] = useState(posts);
+  const [reloading, setReloading] = useState(false);
   useEffect(() => setItems(posts), [posts]);
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm" style={{ color: "#111" }}>ブログ投稿一覧</div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              if (!onRefresh) return;
+              try {
+                setReloading(true);
+                await onRefresh();
+              } finally {
+                setReloading(false);
+              }
+            }}
+            className="px-2 py-1 text-sm rounded-sm disabled:opacity-60"
+            disabled={reloading}
+            style={{
+              color: "#111",
+              background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)",
+              border: "1px solid #6e6e6e",
+              boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset",
+            }}
+            title="最新状態に更新"
+          >
+            {reloading ? "更新中..." : "更新"}
+          </button>
+          <div className="text-sm" style={{ color: "#111" }}>ブログ投稿一覧</div>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={onOpenNewPost}
