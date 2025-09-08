@@ -1,9 +1,13 @@
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 export default function PostsPage() {
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">ブログ一覧</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">ブログ一覧</h1>
+        <BackButton />
+      </div>
 
       <div className="flex gap-3">
         <Link
@@ -26,4 +30,3 @@ export default function PostsPage() {
     </div>
   );
 }
-

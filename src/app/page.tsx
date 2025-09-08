@@ -1,103 +1,112 @@
-import Image from "next/image";
+import Link from "next/link";
+import DeleteButton from "@/components/DeleteButton";
+import { getPool } from "@/lib/db";
 
-export default function Home() {
+type Post = {
+  id: number;
+  name: string;
+  content: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+  tags: string[];
+};
+
+async function fetchPosts(): Promise<Post[]> {
+  const pool = getPool();
+  const [rows]: any = await pool.query(
+    `SELECT p.id, p.name, p.content, p.created_at, p.updated_at, t.name AS tag_name
+     FROM posts p
+     LEFT JOIN post_tag pt ON pt.post_id = p.id
+     LEFT JOIN tags t ON t.id = pt.tag_id
+     ORDER BY p.created_at DESC`
+  );
+
+  const map = new Map<number, Post>();
+  for (const r of rows as any[]) {
+    const id = Number(r.id);
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        name: r.name,
+        content: r.content,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        tags: [],
+      });
+    }
+    if (r.tag_name) {
+      const post = map.get(id)!;
+      if (!post.tags.includes(r.tag_name)) post.tags.push(r.tag_name);
+    }
+  }
+  return Array.from(map.values());
+}
+
+export default async function HomePage() {
+  const posts = await fetchPosts();
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">ブログ一覧</h1>
+        <div className="flex gap-3">
+          <Link
+            href="/posts/new"
+            className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            新規投稿
+          </Link>
+          <Link
+            href="/tags"
+            className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300"
           >
-            Read our docs
-          </a>
+            タグ検索
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {posts.length === 0 ? (
+        <p className="text-sm text-gray-600">まだ投稿がありません。</p>
+      ) : (
+        <ul className="space-y-4">
+          {posts.map((p) => (
+            <li key={p.id} className="rounded border border-gray-200 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-semibold">{p.name}</h2>
+                  <div className="text-xs text-gray-500">
+                    {new Date(p.created_at).toLocaleString()}
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Link
+                    href={`/posts/${p.id}/edit`}
+                    className="px-2 py-1 rounded bg-gray-700 text-white hover:bg-gray-800"
+                  >
+                    編集
+                  </Link>
+                  <DeleteButton postId={p.id} />
+                </div>
+              </div>
+              {p.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {p.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center rounded-full bg-gray-200 px-2 py-1 text-xs text-gray-700"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">
+                {p.content.length > 200 ? p.content.slice(0, 200) + "..." : p.content}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
