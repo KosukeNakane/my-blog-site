@@ -77,6 +77,7 @@ export default function XpDesktop({ blogPosts }: Props) {
   const [startOpen, setStartOpen] = useState(false);
 
   const [modal, setModal] = useState<string | null>(null);
+  const [inverting, setInverting] = useState(false);
 
   function focusWin(id: string) {
     setWindows((prev) => {
@@ -295,17 +296,17 @@ export default function XpDesktop({ blogPosts }: Props) {
       prev.map((w) =>
         w.kind === "blog"
           ? {
-              ...w,
-              content: (
-                <BlogListWindow
-                  posts={postsState}
-                  onOpenNewPost={openNewPost}
-                  onOpenTags={openTags}
-                  onOpenEdit={openEditPost}
-                  onRefresh={refreshPosts}
-                />
-              ),
-            }
+            ...w,
+            content: (
+              <BlogListWindow
+                posts={postsState}
+                onOpenNewPost={openNewPost}
+                onOpenTags={openTags}
+                onOpenEdit={openEditPost}
+                onRefresh={refreshPosts}
+              />
+            ),
+          }
           : w
       )
     );
@@ -315,74 +316,151 @@ export default function XpDesktop({ blogPosts }: Props) {
     <div className="w-full min-h-screen" style={{ fontFamily: "Tahoma, Verdana, 'Segoe UI', sans-serif" }}>
       <div
         className="relative w-full min-h-screen overflow-hidden"
-        style={{ background: "linear-gradient(180deg, #3aa0ff 0%, #2f7adf 40%, #2b8b57 100%)" }}
+        style={{
+          background: inverting
+            ? "#ff0000"
+            : "linear-gradient(180deg, #3aa0ff 0%, #2f7adf 40%, #2b8b57 100%)",
+        }}
         onClick={() => setStartOpen(false)}
       >
-        {windows
-          .filter((w) => !w.minimized)
-          .sort((a, b) => a.z - b.z)
-          .map((w) => (
-            <XpWindowComp
-              key={w.id}
-              w={w}
-              onFocus={() => focusWin(w.id)}
-              onClose={() => closeWin(w.id)}
-              onMinimize={() => toggleMinimize(w.id)}
-              onMaximize={() => toggleMaximize(w.id)}
-              onMove={(x, y) => setWindows((ws) => ws.map((it) => (it.id === w.id ? { ...it, x, y } : it)))}
-              onResize={(wpx, hpx) => setWindows((ws) => ws.map((it) => (it.id === w.id ? { ...it, w: wpx, h: hpx } : it)))}
-            />
-          ))}
-
         <div
-          className="absolute left-0 right-0 bottom-0 h-12 flex items-stretch"
-          style={{ background: "linear-gradient(180deg, #3b6ea5 0%, #295a9e 100%)", boxShadow: "0 -1px 0 #7fa7d9 inset, 0 -2px 0 #1f4a86 inset" }}
+          style={{
+            pointerEvents: inverting ? "none" : "auto",
+            filter: inverting ? "invert(1) hue-rotate(180deg)" : undefined,
+            transition: "filter 120ms ease",
+          }}
         >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setStartOpen((s) => !s);
-            }}
-            className="mx-1 my-1 px-3 rounded-sm text-sm font-bold flex items-center gap-2 shadow active:translate-y-px"
-            style={{ color: "#fff", background: "linear-gradient(180deg, #5db15d 0%, #2f8a2f 100%)", boxShadow: "0 1px 0 #8dd38d inset, 0 -1px 0 #1d5f1d inset", border: "1px solid #1b5e1b" }}
-          >
-            <div className="grid grid-cols-2 gap-0.5">
-              <span className="w-2 h-2 bg-white block" />
-              <span className="w-2 h-2 bg-white block" />
-              <span className="w-2 h-2 bg-white block" />
-              <span className="w-2 h-2 bg-white block" />
-            </div>
-            Start
-          </button>
-
-          <div className="flex-1 flex items-center gap-1 overflow-x-auto px-1">
-            {windows.map((w) => (
-              <button
+          {windows
+            .filter((w) => !w.minimized)
+            .sort((a, b) => a.z - b.z)
+            .map((w) => (
+              <XpWindowComp
                 key={w.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTaskbarButton(w.id);
-                }}
-                className={`h-9 min-w-[160px] px-3 text-left text-sm truncate rounded-sm border ${w.minimized ? "opacity-80" : ""}`}
-                style={{ color: "#111", background: "linear-gradient(180deg, #f0f6ff 0%, #c7dbff 60%, #a8c3f2 100%)", borderColor: "#5a7bb2", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #92b2e3 inset" }}
-                title={w.title}
-              >
-                {w.title}
-              </button>
+                w={w}
+                onFocus={() => focusWin(w.id)}
+                onClose={() => closeWin(w.id)}
+                onMinimize={() => toggleMinimize(w.id)}
+                onMaximize={() => toggleMaximize(w.id)}
+                onMove={(x, y) => setWindows((ws) => ws.map((it) => (it.id === w.id ? { ...it, x, y } : it)))}
+                onResize={(wpx, hpx) => setWindows((ws) => ws.map((it) => (it.id === w.id ? { ...it, w: wpx, h: hpx } : it)))}
+              />
             ))}
+
+          <div
+            className="absolute left-0 right-0 bottom-0 h-12 flex items-stretch"
+            style={{ background: "linear-gradient(180deg, #3b6ea5 0%, #295a9e 100%)", boxShadow: "0 -1px 0 #7fa7d9 inset, 0 -2px 0 #1f4a86 inset" }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setStartOpen((s) => !s);
+              }}
+              className="mx-1 my-1 px-3 rounded-sm text-sm font-bold flex items-center gap-2 shadow active:translate-y-px"
+              style={{ color: "#fff", background: "linear-gradient(180deg, #5db15d 0%, #2f8a2f 100%)", boxShadow: "0 1px 0 #8dd38d inset, 0 -1px 0 #1d5f1d inset", border: "1px solid #1b5e1b" }}
+            >
+              <div className="grid grid-cols-2 gap-0.5">
+                <span className="w-2 h-2 bg-white block" />
+                <span className="w-2 h-2 bg-white block" />
+                <span className="w-2 h-2 bg-white block" />
+                <span className="w-2 h-2 bg-white block" />
+              </div>
+              Start
+            </button>
+
+            <div className="flex-1 flex items-center gap-1 overflow-x-auto px-1">
+              {windows.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTaskbarButton(w.id);
+                  }}
+                  className={`h-9 min-w-[160px] px-3 text-left text-sm truncate rounded-sm border ${w.minimized ? "opacity-80" : ""}`}
+                  style={{ color: "#111", background: "linear-gradient(180deg, #f0f6ff 0%, #c7dbff 60%, #a8c3f2 100%)", borderColor: "#5a7bb2", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #92b2e3 inset" }}
+                  title={w.title}
+                >
+                  {w.title}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-28 flex items-center justify-end pr-3 text-sm select-none" style={{ color: "#111" }}>{timeText}</div>
           </div>
 
-          <div className="w-28 flex items-center justify-end pr-3 text-sm select-none" style={{ color: "#111" }}>{timeText}</div>
-        </div>
+          {startOpen && (
+            <StartMenu
+              onOpenNotepad={openNotepad}
+              onOpenMyComputer={openMyComputer}
+              onOpenBlog={openBlog}
+              onRun={() => {
+                setStartOpen(false);
+                setInverting(true);
+                setTimeout(() => {
+                  setInverting(false);
+                  setModal("Surprised? 😉");
+                }, 3000);
+              }}
+              onClose={() => setStartOpen(false)}
+            />
+          )}
 
-        {startOpen && (
-          <StartMenu
-            onOpenNotepad={openNotepad}
-            onOpenMyComputer={openMyComputer}
-            onOpenBlog={openBlog}
-            onClose={() => setStartOpen(false)}
-          />
-        )}
+          {/* Glitchy scary overlay during inversion */}
+          {inverting && (
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ zIndex: 100000, pointerEvents: "none" }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,0.35) 100%)",
+                  mixBlendMode: "multiply",
+                }}
+              />
+              <div className="text-center select-none">
+                <div
+                  className="animate-pulse"
+                  style={{
+                    color: "#fff",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                    fontSize: "64px",
+                    letterSpacing: "2px",
+                    textShadow: "0 0 10px #ff0000, 0 0 20px #990000",
+                    transform: "rotate(-2deg)",
+                  }}
+                >
+                  █▓▒░ΞЖЯ░▒▓█ ﾛﾞﾛﾞﾛﾞ ░▒▓█
+                </div>
+                <div
+                  className="animate-pulse"
+                  style={{
+                    color: "#fff",
+                    opacity: 0.9,
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                    fontSize: "32px",
+                    marginTop: "12px",
+                    textShadow: "0 0 6px #ff0000",
+                  }}
+                >
+                  ▓▒░…ΞΞΣΣЖЖ░▒▓
+                </div>
+                <div
+                  className="animate-pulse"
+                  style={{
+                    color: "#fff",
+                    opacity: 0.8,
+                    fontSize: "18px",
+                    marginTop: "8px",
+                    textShadow: "0 0 4px #ff0000",
+                  }}
+                >
+                  ░▒█ ERR*R_ЖΞЖΞ ⟟⟒⟟⟒ █▒░
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {modal && (
           <div className="absolute inset-0 flex items-center justify-center" onClick={() => setModal(null)} style={{ zIndex: 10000 }}>
@@ -394,7 +472,7 @@ export default function XpDesktop({ blogPosts }: Props) {
               <div className="p-4" style={{ background: "#ECE9D8", borderTop: "1px solid #fff", boxShadow: "inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b5b1a7" }}>
                 <p className="text-sm mb-4" style={{ color: "#111" }}>{modal}</p>
                 <div className="text-right">
-                 <button onClick={() => setModal(null)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">OK</button>
+                  <button onClick={() => setModal(null)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">OK</button>
                 </div>
               </div>
             </div>
@@ -582,7 +660,7 @@ function MyComputer() {
   );
 }
 
-function StartMenu({ onOpenNotepad, onOpenMyComputer, onOpenBlog, onClose }: { onOpenNotepad: () => void; onOpenMyComputer: () => void; onOpenBlog: () => void; onClose: () => void; }) {
+function StartMenu({ onOpenNotepad, onOpenMyComputer, onOpenBlog, onRun, onClose }: { onOpenNotepad: () => void; onOpenMyComputer: () => void; onOpenBlog: () => void; onRun: () => void; onClose: () => void; }) {
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onEsc);
@@ -598,7 +676,7 @@ function StartMenu({ onOpenNotepad, onOpenMyComputer, onOpenBlog, onClose }: { o
           <MenuButton label="My Computer" onClick={onOpenMyComputer} />
           <MenuButton label="Notepad" onClick={onOpenNotepad} />
           <div className="my-2 border-t border-[#b9c6dd]" />
-          <MenuButton label="Run…" onClick={() => alert("Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.")} />
+          <MenuButton label="Run…" onClick={onRun} />
         </div>
       </div>
       <div className="h-8 flex items-center justify-end px-2 text-xs" style={{ background: "#dfe7f6", borderTop: "1px solid #9fb4da" }}>
