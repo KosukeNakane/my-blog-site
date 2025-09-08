@@ -2,6 +2,8 @@
 
 Next.js 15（App Router）+ TypeScript のブログアプリです。DB は MySQL（`mysql2` クライアント）を使用し、`posts` / `tags` / `post_tag` の3テーブルで記事とタグを管理します。UI はホームページで Windows XP 風デスクトップを再現し、ウインドウ内で「新規投稿」「編集」「タグ管理」「タグ別一覧」などの画面を開きます。
 
+<img width="1898" height="990" alt="スクリーンショット 2025-09-08 22 25 12" src="https://github.com/user-attachments/assets/d145e2a3-10db-43d6-9827-153ee336fb7e" />
+
 ## 前提
 - Node.js 18 以上（推奨: 20+）
 - pnpm 10 以上（npm/yarn でも可）
