@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getPool } from "@/lib/db";
 import EditPostForm from "@/components/EditPostForm";
 import BackButton from "@/components/BackButton";
+import XpPage from "@/components/xp/XpPage";
 
 type Props = { params: Promise<{ postId: string }> };
 
@@ -31,38 +32,37 @@ export default async function EditPostPage({ params }: Props) {
   const idNum = Number(postId);
   if (!Number.isFinite(idNum) || idNum <= 0) {
     return (
-      <div className="p-6">
+      <XpPage title="投稿編集">
         <p className="text-sm text-red-600">不正なIDです。</p>
-      </div>
+      </XpPage>
     );
   }
 
   const post = await fetchPost(idNum);
   if (!post) {
     return (
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-bold">投稿編集</h1>
-        <p className="text-sm text-gray-600">見つかりませんでした。</p>
-        <Link href="/" className="text-blue-600 hover:underline text-sm">
-          一覧に戻る
-        </Link>
-      </div>
+      <XpPage title="投稿編集">
+        <div className="space-y-3">
+          <h1 className="text-lg font-bold">投稿編集</h1>
+          <p className="text-sm" style={{ color: '#333' }}>見つかりませんでした。</p>
+          <Link href="/" className="text-blue-600 hover:underline text-sm">一覧に戻る</Link>
+        </div>
+      </XpPage>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">投稿編集</h1>
+    <XpPage title="投稿編集">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-bold">投稿編集</h1>
         <BackButton />
       </div>
-
       <EditPostForm
         postId={post.id}
         initialName={post.name}
         initialContent={post.content}
         initialTags={post.tags}
       />
-    </div>
+    </XpPage>
   );
 }

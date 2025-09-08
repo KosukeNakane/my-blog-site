@@ -114,9 +114,52 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const url = new URL(req.url);
+    const tagIdParam = url.searchParams.get("tagId");
     const pool = getPool();
+
+    if (tagIdParam) {
+      const tagId = Number(tagIdParam);
+      if (!Number.isFinite(tagId) || tagId <= 0) {
+        return NextResponse.json({ message: "不正なtagIdです" }, { status: 400 });
+      }
+      const [[tagRow]]: any = await pool.query("SELECT name FROM tags WHERE id = ?", [tagId]);
+      const tagName: string | undefined = tagRow?.name;
+
+      const [rows]: any = await pool.query(
+        `SELECT p.id, p.name, p.content, p.created_at, p.updated_at, t2.name AS tag_name
+         FROM posts p
+         JOIN post_tag ptf ON ptf.post_id = p.id AND ptf.tag_id = ?
+         LEFT JOIN post_tag pt2 ON pt2.post_id = p.id
+         LEFT JOIN tags t2 ON t2.id = pt2.tag_id
+         ORDER BY p.created_at DESC`,
+        [tagId]
+      );
+
+      const map = new Map<number, any>();
+      for (const r of rows as any[]) {
+        const id = Number(r.id);
+        if (!map.has(id)) {
+          map.set(id, {
+            id,
+            name: r.name,
+            content: r.content,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+            tags: [] as string[],
+          });
+        }
+        if (r.tag_name) {
+          const post = map.get(id)!;
+          if (!post.tags.includes(r.tag_name)) post.tags.push(r.tag_name);
+        }
+      }
+      return NextResponse.json({ posts: Array.from(map.values()), tagName });
+    }
+
+    // no filter: all posts
     const [rows]: any = await pool.query(
       `SELECT p.id, p.name, p.content, p.created_at, p.updated_at, t.name AS tag_name
        FROM posts p
@@ -144,8 +187,7 @@ export async function GET() {
       }
     }
 
-    const list = Array.from(map.values());
-    return NextResponse.json({ posts: list });
+    return NextResponse.json({ posts: Array.from(map.values()) });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ message: "取得に失敗しました" }, { status: 500 });

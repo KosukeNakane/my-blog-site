@@ -8,9 +8,11 @@ type Props = {
   id: number;
   name: string;
   postCount: number;
+  onChanged?: () => void;
+  onOpenList?: (id: number, name: string) => void;
 };
 
-export default function TagRow({ id, name, postCount }: Props) {
+export default function TagRow({ id, name, postCount, onChanged, onOpenList }: Props) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(name);
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,8 @@ export default function TagRow({ id, name, postCount }: Props) {
         throw new Error(data?.message || "更新に失敗しました");
       }
       setEditing(false);
-      router.refresh();
+      if (onChanged) onChanged();
+      else router.refresh();
     } catch (e: any) {
       alert(e?.message || "更新に失敗しました");
     } finally {
@@ -49,7 +52,8 @@ export default function TagRow({ id, name, postCount }: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "削除に失敗しました");
       }
-      router.refresh();
+      if (onChanged) onChanged();
+      else router.refresh();
     } catch (e: any) {
       alert(e?.message || "削除に失敗しました");
     } finally {
@@ -58,63 +62,46 @@ export default function TagRow({ id, name, postCount }: Props) {
   }
 
   return (
-    <li className="flex items-center justify-between border-b border-gray-200 py-2">
+    <li className="flex items-center justify-between border-b border-gray-300 py-2">
       <div className="flex items-center gap-3">
-        <span className="inline-block min-w-6 text-right text-xs text-gray-500">
+        <span className="inline-block min-w-6 text-right text-xs" style={{ color: "#333" }}>
           {postCount}
         </span>
         {editing ? (
           <input
             value={val}
             onChange={(e) => setVal(e.target.value)}
-            className="rounded border border-gray-300 px-2 py-1"
+            className="px-2 py-1 text-sm rounded-sm"
+            style={{ background: "#FFFFFF", border: "1px solid #b5b1a7", boxShadow: "inset 1px 1px 0 #e6e6e6" }}
           />
         ) : (
           <span className="font-medium">{name}</span>
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Link
-          href={`/posts/tags/${id}`}
-          className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-        >
-          一覧
-        </Link>
+        {onOpenList ? (
+          <button
+            onClick={() => onOpenList(id, name)}
+            className="px-2 py-1 text-sm rounded-sm"
+            style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}
+          >
+            一覧
+          </button>
+        ) : (
+          <Link href={`/posts/tags/${id}`} className="px-2 py-1 text-sm rounded-sm" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>一覧</Link>
+        )}
         {editing ? (
           <>
-            <button
-              onClick={save}
-              disabled={loading}
-              className="px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm disabled:opacity-60"
-            >
-              保存
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-sm"
-            >
-              キャンセル
-            </button>
+            <button onClick={save} disabled={loading} className="px-2 py-1 text-sm rounded-sm disabled:opacity-60" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>保存</button>
+            <button onClick={() => setEditing(false)} className="px-2 py-1 text-sm rounded-sm" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>キャンセル</button>
           </>
         ) : (
           <>
-            <button
-              onClick={() => setEditing(true)}
-              className="px-2 py-1 rounded bg-gray-700 text-white hover:bg-gray-800 text-sm"
-            >
-              変更
-            </button>
-            <button
-              onClick={remove}
-              disabled={loading}
-              className="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm disabled:opacity-60"
-            >
-              削除
-            </button>
+            <button onClick={() => setEditing(true)} className="px-2 py-1 text-sm rounded-sm" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>変更</button>
+            <button onClick={remove} disabled={loading} className="px-2 py-1 text-sm rounded-sm disabled:opacity-60" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>削除</button>
           </>
         )}
       </div>
     </li>
   );
 }
-

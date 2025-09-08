@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AddTagForm() {
+type Props = { onChanged?: () => void };
+
+export default function AddTagForm({ onChanged }: Props) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -26,7 +28,8 @@ export default function AddTagForm() {
         throw new Error(data?.message || "作成に失敗しました");
       }
       setName("");
-      router.refresh();
+      if (onChanged) onChanged();
+      else router.refresh();
       setMsg("追加しました");
     } catch (e: any) {
       setMsg(e?.message || "エラー");
@@ -42,17 +45,27 @@ export default function AddTagForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="タグ名"
-        className="rounded border border-gray-300 px-3 py-2"
+        className="px-2 py-1 text-sm rounded-sm"
+        style={{
+          background: "#FFFFFF",
+          border: "1px solid #b5b1a7",
+          boxShadow: "inset 1px 1px 0 #e6e6e6",
+        }}
       />
       <button
         type="submit"
         disabled={loading}
-        className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+        className="px-3 py-1 text-sm rounded-sm disabled:opacity-60"
+        style={{
+          color: "#111",
+          background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)",
+          border: "1px solid #6e6e6e",
+          boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset",
+        }}
       >
         追加
       </button>
-      {msg && <span className="text-xs text-gray-600">{msg}</span>}
+      {msg && <span className="text-xs" style={{ color: '#333' }}>{msg}</span>}
     </form>
   );
 }
-

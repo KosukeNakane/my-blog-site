@@ -1,32 +1,22 @@
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import XpPage from "@/components/xp/XpPage";
 
 export default function PostsPage() {
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">ブログ一覧</h1>
+    <XpPage title="ブログ一覧">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <Link href="/posts/new" className="px-3 py-1 text-sm rounded-sm" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>
+            新規投稿
+          </Link>
+          <Link href="/tags" className="px-3 py-1 text-sm rounded-sm" style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}>
+            タグ検索
+          </Link>
+        </div>
         <BackButton />
       </div>
-
-      <div className="flex gap-3">
-        <Link
-          href="/posts/new"
-          className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-        >
-          新規投稿
-        </Link>
-        <Link
-          href="/tags"
-          className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300"
-        >
-          タグ検索
-        </Link>
-      </div>
-
-      <div className="text-sm text-gray-600">
-        ここに投稿一覧を表示し、各投稿に「編集・削除」ボタンを配置します。
-      </div>
-    </div>
+      <div className="text-sm" style={{ color: '#333' }}>ここに投稿一覧を表示し、各投稿に「編集・削除」ボタンを配置します。</div>
+    </XpPage>
   );
 }

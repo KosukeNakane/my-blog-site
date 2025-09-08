@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import BackButton from "@/components/BackButton";
+import XpPage from "@/components/xp/XpPage";
 
 type NewPostPayload = {
   name: string; // タイトル（posts.name）
@@ -58,9 +59,9 @@ export default function NewPostPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">新規投稿</h1>
+    <XpPage title="新規投稿">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-bold">新規投稿</h1>
         <BackButton />
       </div>
 
@@ -76,7 +77,8 @@ export default function NewPostPage() {
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="例: はじめての投稿"
-            className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 text-sm rounded-sm focus:outline-none"
+            style={{ background: "#FFFFFF", border: "1px solid #b5b1a7", boxShadow: "inset 1px 1px 0 #e6e6e6" }}
           />
         </div>
 
@@ -91,7 +93,8 @@ export default function NewPostPage() {
             required
             rows={10}
             placeholder="本文を入力"
-            className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 text-sm rounded-sm focus:outline-none"
+            style={{ background: "#FFFFFF", border: "1px solid #b5b1a7", boxShadow: "inset 1px 1px 0 #e6e6e6" }}
           />
         </div>
 
@@ -105,14 +108,16 @@ export default function NewPostPage() {
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
             placeholder="例: nextjs blog, mysql"
-            className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1 text-sm rounded-sm focus:outline-none"
+            style={{ background: "#FFFFFF", border: "1px solid #b5b1a7", boxShadow: "inset 1px 1px 0 #e6e6e6" }}
           />
           {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center rounded-full bg-gray-200 px-2 py-1 text-xs text-gray-700"
+                  className="inline-flex items-center rounded-full bg-gray-200 px-2 py-1 text-xs"
+                  style={{ color: '#111' }}
                 >
                   {t}
                 </span>
@@ -125,19 +130,20 @@ export default function NewPostPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+            className="px-3 py-1 text-sm rounded-sm disabled:opacity-60"
+            style={{ color: "#111", background: "linear-gradient(180deg, #f7f7f7 0%, #d9d9d9 100%)", border: "1px solid #6e6e6e", boxShadow: "0 1px 0 #ffffff inset, 0 -1px 0 #b4b4b4 inset" }}
           >
             {submitting ? "送信中..." : "保存"}
           </button>
-          {message && <p className="text-sm text-gray-600">{message}</p>}
+          {message && <p className="text-sm" style={{ color: '#333' }}>{message}</p>}
         </div>
       </form>
 
-      <div className="text-xs text-gray-500">
+      <div className="text-xs" style={{ color: '#555' }}>
         {/* 将来の実装メモ: MySQL(MAMP)の `posts`/`tags`/`post_tag` を使用。保存時は
         1) `posts` に `name`/`content` をINSERT、2) `tags` は存在確認の上INSERT、
         3) 中間 `post_tag` に対応IDをINSERT、一覧はJOINで取得します。 */}
       </div>
-    </div>
+    </XpPage>
   );
 }
